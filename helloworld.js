@@ -4,6 +4,16 @@ Koa 中间件以更传统的方式级联，您可能习惯使用类似的工具 
 下面以 “Hello World” 的响应作为示例，当请求开始时首先请求流通过 x-response-time 和 logging 中间件，然后继续移交控制给 response 中间件。当一个中间件调用 next() 则该函数暂停并将控制传递给定义的下一个中间件。当在下游没有更多的中间件执行后，堆栈将展开并且每个中间件恢复执行其上游行为。
 
 */
+/*
+https://cnodejs.org/topic/5640b80d3a6aa72c5e0030b6
+基本规则
+async 表示这是一个async函数，await只能用在这个函数里面。
+await 表示在这里等待promise返回结果了，再继续执行。
+await 后面跟着的应该是一个promise对象（当然，其他返回值也没关系，只是会立即执行，不过那样就没有意义了…）
+
+await等待的虽然是promise对象，但不必写.then(..)，直接可以得到返回值。
+
+*/
 
 const Koa = require('koa');
 const app = new Koa();
@@ -18,7 +28,7 @@ app.use(async (ctx,next) => {
 });
 
 //x-response-time
-app.use(async(ctx,next)=>{
+app.use(async (ctx,next)=>{
 	const start = Date.now();
 	await next();
 	const ms = Date.now() - start;
@@ -28,7 +38,20 @@ app.use(async(ctx,next)=>{
 //response
 app.use(async ctx => {
 	console.log('ctx',ctx);
+	let result=await (function(ctx){
+		return new Promise(function(resolve,reject){
+			setTimeout(()=>{
+				//resolve(this);//返回promise对象
+				resolve(3000);//或直接返回结果值
+			},3000);
+		});
+	}(ctx));
+	console.log('result Promise',result);
 	ctx.body = 'Hello World';
+});
+
+app.on('error', (err, ctx) => {
+  console.log('server error', err, ctx)
 });
 
 app.listen(3000);
